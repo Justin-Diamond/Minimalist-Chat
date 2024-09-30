@@ -30,13 +30,21 @@
         }
 
         .container {
-            max-width: 1000px;
-            width: 95%;
             margin: 0 auto;
             padding: 1rem;
             display: flex;
             flex-direction: column;
             height: 100%;
+        }
+
+        .login-container {
+            max-width: 400px;
+            width: 95%;
+        }
+
+        .main-container {
+            max-width: 1000px;
+            width: 95%;
         }
 
         h1 {
@@ -84,7 +92,7 @@
 
         .button-container {
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-end;
             align-items: center;
             margin-left: 1rem;
         }
@@ -97,7 +105,8 @@
             padding: 0.75rem 1.5rem;
             font-size: 1rem;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: background-color 0.3s, color 0.3s;
+            margin-left: 0.5rem;
         }
 
         button:hover {
@@ -107,8 +116,7 @@
         #clearChat {
             background-color: transparent;
             color: #777;
-            font-size: 0.9rem;
-            padding: 0.5rem 1rem;
+            border: 1px solid #777;
         }
 
         #clearChat:hover {
@@ -211,29 +219,28 @@
 </head>
 
 <body>
-    <div class="container">
-        <div class="login-container active">
-            <h1>Legislative Process Paper Drafter</h1>
-            <label for="password">Enter Password:</label>
-            <input type="password" id="password" name="password">
-            <button id="login">Login</button>
-        </div>
+    <div class="container login-container active">
+        <h1>Legislative Process Paper Drafter</h1>
+        <label for="password">Enter Password:</label>
+        <input type="password" id="password" name="password">
+        <button id="login">Login</button>
+    </div>
 
-        <div class="main-container">
-            <h1>Legislative Process Paper Drafter</h1>
-            <div id="chatContainer"></div>
-            <div id="loading" class="loading" style="display: none;"></div>
-            <div class="input-area">
-                <textarea id="userInput" rows="3" placeholder="Type your message here..."></textarea>
-                <div class="button-container">
-                    <button id="clearChat">Clear</button>
-                    <button id="sendMessage">Send</button>
-                </div>
+    <div class="container main-container">
+        <h1>Legislative Process Paper Drafter</h1>
+        <div id="chatContainer"></div>
+        <div id="loading" class="loading" style="display: none;"></div>
+        <div class="input-area">
+            <textarea id="userInput" rows="3" placeholder="Type your message here..."></textarea>
+            <div class="button-container">
+                <button id="clearChat">Clear</button>
+                <button id="sendMessage">Send</button>
             </div>
         </div>
     </div>
 
     <script>
+        // The JavaScript remains the same as in the previous version
         let keepAliveInterval;
         let conversationHistory = [];
 
