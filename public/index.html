@@ -24,34 +24,19 @@
             line-height: 1.6;
             margin: 0;
             padding: 0;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
         }
 
         .container {
+            max-width: 800px;
             margin: 0 auto;
-            padding: 1rem;
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        }
-
-        .login-container {
-            max-width: 400px;
-            width: 95%;
-        }
-
-        .main-container {
-            max-width: 1000px;
-            width: 95%;
+            padding: 2rem;
         }
 
         h1 {
             color: var(--primary-color);
             text-align: center;
             font-size: 2rem;
-            margin-bottom: 1rem;
+            margin-bottom: 2rem;
         }
 
         .login-container,
@@ -59,18 +44,18 @@
             display: none;
             background-color: white;
             border-radius: 0.5rem;
-            padding: 1rem;
+            padding: 2rem;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
 
-        .login-container.active {
+        .login-container.active,
+        .main-container.active {
             display: block;
         }
 
         .main-container.active {
-            display: flex;
-            flex-direction: column;
-            height: calc(100% - 2rem);
+            max-width: 1000px;
+            width: 95%;
         }
 
         label {
@@ -93,8 +78,7 @@
         .button-container {
             display: flex;
             justify-content: flex-end;
-            align-items: center;
-            margin-left: 1rem;
+            margin-top: 1rem;
         }
 
         button {
@@ -105,8 +89,7 @@
             padding: 0.75rem 1.5rem;
             font-size: 1rem;
             cursor: pointer;
-            transition: background-color 0.3s, color 0.3s;
-            margin-left: 0.5rem;
+            transition: background-color 0.3s;
         }
 
         button:hover {
@@ -117,6 +100,7 @@
             background-color: transparent;
             color: #777;
             border: 1px solid #777;
+            margin-right: 0.5rem;
         }
 
         #clearChat:hover {
@@ -125,14 +109,12 @@
         }
 
         #chatContainer {
-            flex-grow: 1;
+            margin-top: 1.5rem;
             border: 1px solid var(--border-color);
             border-radius: 0.25rem;
+            height: 400px;
             overflow-y: auto;
             padding: 1rem;
-            margin-bottom: 1rem;
-            display: flex;
-            flex-direction: column-reverse;
         }
 
         .message {
@@ -176,17 +158,6 @@
             100% { transform: rotate(360deg); }
         }
 
-        .input-area {
-            display: flex;
-            margin-top: auto;
-        }
-
-        #userInput {
-            flex-grow: 1;
-            margin-right: 1rem;
-            margin-bottom: 0;
-        }
-
         /* Markdown Styles */
         .message p {
             margin: 0 0 1em;
@@ -219,23 +190,24 @@
 </head>
 
 <body>
-    <div class="container login-container active">
-        <h1>Legislative Process Paper Drafter</h1>
-        <label for="password">Enter Password:</label>
-        <input type="password" id="password" name="password">
-        <button id="login">Login</button>
-    </div>
+    <div class="container">
+        <div class="login-container active">
+            <h1>Legislative Process Paper Drafter</h1>
+            <label for="password">Enter Password:</label>
+            <input type="password" id="password" name="password">
+            <button id="login">Login</button>
+        </div>
 
-    <div class="container main-container">
-        <h1>Legislative Process Paper Drafter</h1>
-        <div id="chatContainer"></div>
-        <div id="loading" class="loading" style="display: none;"></div>
-        <div class="input-area">
-            <textarea id="userInput" rows="3" placeholder="Type your message here..."></textarea>
+        <div class="main-container">
+            <h1>Legislative Process Paper Drafter</h1>
+            <label for="userInput">Enter your prompt:</label>
+            <textarea id="userInput" rows="4" placeholder="Type your prompt here..."></textarea>
             <div class="button-container">
                 <button id="clearChat">Clear</button>
                 <button id="sendMessage">Send</button>
             </div>
+            <div id="chatContainer"></div>
+            <div id="loading" class="loading" style="display: none;"></div>
         </div>
     </div>
 
@@ -342,7 +314,7 @@
                 addMessageToChat('assistant', data.response);
 
                 // Scroll to bottom of chat
-                chatContainer.scrollTop = 0;
+                chatContainer.scrollTop = chatContainer.scrollHeight;
             } catch (error) {
                 console.error('Error:', error);
                 alert('An error occurred while generating the response.');
@@ -362,7 +334,7 @@
                 messageDiv.textContent = content;
             }
             
-            chatContainer.insertBefore(messageDiv, chatContainer.firstChild);
+            chatContainer.appendChild(messageDiv);
 
             // Update conversation history
             conversationHistory.push({ role, content });
