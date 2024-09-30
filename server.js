@@ -40,8 +40,6 @@ app.use((req, res, next) => {
     next();
 });
 
-const MAX_HISTORY = 5;
-
 app.post('/login', (req, res) => {
     const enteredPassword = req.body.password;
     const secretPassword = process.env.SECRET_PASSWORD;
@@ -70,82 +68,95 @@ app.post('/generate-response', async (req, res) => {
 
     const { prompt } = req.body;
     const apiKey = process.env.OPENAI_API_KEY;
-    const model = 'gpt-4'; // Use the correct model name here
+    const assistantId = process.env.OPENAI_ASSISTANT_ID;
 
     console.log('--------------------');
     console.log('New Message:');
     console.log('Session ID:', req.sessionID);
     console.log('User Input:', prompt);
 
-    // Add the new message to history
-    req.session.messageHistory.push(prompt);
-    if (req.session.messageHistory.length > MAX_HISTORY) {
-        req.session.messageHistory.shift(); // Remove the oldest message if we exceed MAX_HISTORY
-    }
-
-    console.log('Updated Message History:');
-    req.session.messageHistory.forEach((msg, index) => {
-        console.log(`[${index + 1}] ${msg}`);
-    });
-
-    // Create a context-rich prompt
-    const contextPrompt = req.session.messageHistory.join('\n');
-
-    console.log('Full Context Prompt:');
-    console.log(contextPrompt);
-
     try {
-        // Step 1: Use /v2/completions endpoint to generate response
-        const aiResponse = await fetch('https://api.openai.com/v2/completions', {
+        // Step 1: Create a thread
+        const createThreadResponse = await fetch('https://api.openai.com/v2/threads', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'OpenAI-Beta': 'assistants=v1'
             },
             body: JSON.stringify({
-                model: model,
-                prompt: contextPrompt,
-                max_tokens: 150, // Adjust tokens as per your need
-                temperature: 0.7 // Adjust temperature as needed
+                messages: [{ role: "user", content: prompt }]
             })
         });
 
-        if (!aiResponse.ok) {
-            const errorData = await aiResponse.json();
-            console.error('AI response error:', errorData);
-            return res.status(aiResponse.status).json({ error: 'Failed to generate response', details: errorData });
+        if (!createThreadResponse.ok) {
+            const errorData = await createThreadResponse.json();
+            console.error('Thread creation error:', errorData);
+            return res.status(createThreadResponse.status).json({ error: 'Failed to create thread', details: errorData });
         }
 
-        const data = await aiResponse.json();
-        const responseText = data.choices[0].text.trim();
+        const thread = await createThreadResponse.json();
+        console.log('Thread created:', thread.id);
+
+        // Step 2: Run the assistant
+        const runResponse = await fetch(`https://api.openai.com/v2/threads/${thread.id}/runs`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+                'OpenAI-Beta': 'assistants=v1'
+            },
+            body: JSON.stringify({
+                assistant_id: assistantId,
+                model: "gpt-4-0125-preview"
+            })
+        });
+
+        if (!runResponse.ok) {
+            const errorData = await runResponse.json();
+            console.error('Run creation error:', errorData);
+            return res.status(runResponse.status).json({ error: 'Failed to run assistant', details: errorData });
+        }
+
+        const run = await runResponse.json();
+        console.log('Run created:', run.id);
+
+        // Step 3: Polling for completion
+        let runStatus = await checkRunStatus(thread.id, run.id, apiKey);
+        while (runStatus.status !== 'completed') {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            runStatus = await checkRunStatus(thread.id, run.id, apiKey);
+        }
+
+        console.log('Run completed');
+
+        // Step 4: Retrieve the messages
+        const messagesResponse = await fetch(`https://api.openai.com/v2/threads/${thread.id}/messages`, {
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'OpenAI-Beta': 'assistants=v1'
+            }
+        });
+
+        if (!messagesResponse.ok) {
+            const errorData = await messagesResponse.json();
+            console.error('Messages retrieval error:', errorData);
+            return res.status(messagesResponse.status).json({ error: 'Failed to retrieve messages', details: errorData });
+        }
+
+        const messages = await messagesResponse.json();
+        const aiResponse = messages.data[0].content[0].text.value;
         
         console.log('AI Response:');
-        console.log(responseText);
+        console.log(aiResponse);
         console.log('--------------------');
 
-        res.json({ response: responseText });
+        res.json({ response: aiResponse });
 
     } catch (error) {
         console.error('Error:', error.stack || error);
         res.status(500).json({ error: 'Internal Server Error', details: error.message });
     }
-});
-
-app.post('/clear-context', (req, res) => {
-    if (!req.session.authenticated) {
-        console.log('Unauthorized clear context attempt');
-        return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    console.log('--------------------');
-    console.log('Clearing Context:');
-    console.log('Session ID:', req.sessionID);
-    
-    req.session.messageHistory = []; // Clear the message history for this session
-    console.log('Message history cleared');
-    console.log('--------------------');
-    
-    res.json({ success: true });
 });
 
 app.post('/keep-alive', (req, res) => {
@@ -163,7 +174,22 @@ app.post('/keep-alive', (req, res) => {
     console.log('--------------------');
 });
 
-// Start the server
+// Helper function to check the run status
+async function checkRunStatus(threadId, runId, apiKey) {
+    const response = await fetch(`https://api.openai.com/v2/threads/${threadId}/runs/${runId}`, {
+        headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'OpenAI-Beta': 'assistants=v1'
+        }
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to check run status: ${response.status} ${response.statusText}`);
+    }
+
+    return await response.json();
+}
+
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
     console.log('NODE_ENV:', process.env.NODE_ENV);
