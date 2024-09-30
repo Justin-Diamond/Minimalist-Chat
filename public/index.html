@@ -371,3 +371,162 @@
 </body>
 
 </html>
+
+    <script>
+        // The JavaScript remains the same as in the previous version
+        let keepAliveInterval;
+        let conversationHistory = [];
+
+        function handleSessionExpiration() {
+            console.log('Session expired');
+            alert('Your session has expired. Please log in again.');
+            document.querySelector('.main-container').classList.remove('active');
+            document.querySelector('.login-container').classList.add('active');
+            stopKeepAlive();
+        }
+
+        function startKeepAlive() {
+            keepAliveInterval = setInterval(sendKeepAlive, 5 * 60 * 1000); // every 5 minutes
+        }
+
+        function stopKeepAlive() {
+            clearInterval(keepAliveInterval);
+        }
+
+        function sendKeepAlive() {
+            console.log('Sending keep-alive request');
+            fetch('/keep-alive', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                console.log('Keep-alive response status:', response.status);
+                if (!response.ok) {
+                    throw new Error('Keep-alive failed');
+                }
+            })
+            .catch(error => {
+                console.error('Keep-alive error:', error);
+                handleSessionExpiration();
+            });
+        }
+
+        document.getElementById('login').addEventListener('click', function () {
+            const enteredPassword = document.getElementById('password').value;
+
+            fetch('/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ password: enteredPassword })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Login successful');
+                    document.querySelector('.login-container').classList.remove('active');
+                    document.querySelector('.main-container').classList.add('active');
+                    startKeepAlive();
+                } else {
+                    console.log('Login failed');
+                    alert('Incorrect password!');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+        
+        async function sendMessage() {
+            const userInput = document.getElementById('userInput').value.trim();
+            if (!userInput) return;
+
+            const chatContainer = document.getElementById('chatContainer');
+            const loadingDiv = document.getElementById('loading');
+            
+            // Add user message to chat
+            addMessageToChat('user', userInput);
+
+            // Clear input field
+            document.getElementById('userInput').value = '';
+
+            // Show loading indicator
+            loadingDiv.style.display = 'block';
+
+            try {
+                const response = await fetch('/generate-response', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: userInput, history: conversationHistory })
+                });
+
+                if (response.status === 401) {
+                    handleSessionExpiration();
+                    return;
+                }
+
+                const data = await response.json();
+                
+                // Hide loading indicator
+                loadingDiv.style.display = 'none';
+
+                // Add assistant message to chat
+                addMessageToChat('assistant', data.response);
+
+                // Scroll to bottom of chat
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while generating the response.');
+                loadingDiv.style.display = 'none';
+            }
+        }
+
+        function addMessageToChat(role, content) {
+            const chatContainer = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+            
+            if (role === 'assistant') {
+                // Use marked.js to render markdown
+                messageDiv.innerHTML = marked.parse(content);
+            } else {
+                messageDiv.textContent = content;
+            }
+            
+            chatContainer.appendChild(messageDiv);
+
+            // Update conversation history
+            conversationHistory.push({ role, content });
+        }
+
+        function clearChat() {
+            conversationHistory = [];
+            document.getElementById('chatContainer').innerHTML = '';
+            fetch('/clear-context', { method: 'POST' })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to clear context on server');
+                    }
+                })
+                .catch(error => console.error('Error clearing context:', error));
+        }
+
+        document.getElementById('sendMessage').addEventListener('click', sendMessage);
+        document.getElementById('clearChat').addEventListener('click', clearChat);
+
+        // Allow sending message with Enter key, Shift+Enter for new line
+        document.getElementById('userInput').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Stop the keep-alive mechanism when the window is closed or navigated away from
+        window.addEventListener('beforeunload', stopKeepAlive);
+    </script>
+</body>
+
+</html>
