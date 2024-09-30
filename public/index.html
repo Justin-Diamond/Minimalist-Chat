@@ -12,6 +12,8 @@
             --background-color: #f7f7f8;
             --text-color: #353740;
             --border-color: #e5e5e5;
+            --message-bg-user: #e6f3f0;
+            --message-bg-assistant: #ffffff;
         }
 
         body {
@@ -58,15 +60,13 @@
 
         input[type="password"],
         textarea {
-            width: calc(100% - 1.5rem);
+            width: 100%;
             padding: 0.75rem;
             border: 1px solid var(--border-color);
             border-radius: 0.25rem;
             font-size: 1rem;
             margin-bottom: 1rem;
-            margin-left: auto;
-            margin-right: auto;
-            display: block;
+            box-sizing: border-box;
         }
 
         .button-container {
@@ -98,12 +98,33 @@
             background-color: #c0392b;
         }
 
-        #output {
+        #chatContainer {
             margin-top: 1.5rem;
-            padding: 1rem;
-            background-color: var(--background-color);
+            border: 1px solid var(--border-color);
             border-radius: 0.25rem;
-            white-space: pre-wrap;
+            height: 400px;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .message {
+            max-width: 80%;
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            line-height: 1.4;
+        }
+
+        .message.user {
+            background-color: var(--message-bg-user);
+            align-self: flex-end;
+            margin-left: auto;
+        }
+
+        .message.assistant {
+            background-color: var(--message-bg-assistant);
+            align-self: flex-start;
+            border: 1px solid var(--border-color);
         }
 
         .loading {
@@ -146,8 +167,8 @@
                 <button id="clearChat">Clear Chat</button>
                 <button id="sendMessage">Generate Draft</button>
             </div>
+            <div id="chatContainer"></div>
             <div id="loading" class="loading" style="display: none;"></div>
-            <div id="output"></div>
         </div>
     </div>
 
@@ -217,9 +238,17 @@
         });
         
         async function sendMessage() {
-            const userInput = document.getElementById('userInput').value;
-            const outputDiv = document.getElementById('output');
+            const userInput = document.getElementById('userInput').value.trim();
+            if (!userInput) return;
+
+            const chatContainer = document.getElementById('chatContainer');
             const loadingDiv = document.getElementById('loading');
+            
+            // Add user message to chat
+            addMessageToChat('user', userInput);
+
+            // Clear input field
+            document.getElementById('userInput').value = '';
 
             // Show loading indicator
             loadingDiv.style.display = 'block';
@@ -241,20 +270,11 @@
                 // Hide loading indicator
                 loadingDiv.style.display = 'none';
 
-                // Update conversation history
-                conversationHistory.push({ role: 'user', content: userInput });
-                conversationHistory.push({ role: 'assistant', content: data.response });
+                // Add assistant message to chat
+                addMessageToChat('assistant', data.response);
 
-                // Display full conversation
-                outputDiv.innerHTML = conversationHistory.map(msg => 
-                    `<p><strong>${msg.role === 'user' ? 'You' : 'Assistant'}:</strong> ${msg.content}</p>`
-                ).join('');
-
-                // Clear input field
-                document.getElementById('userInput').value = '';
-
-                // Scroll to bottom of output
-                outputDiv.scrollTop = outputDiv.scrollHeight;
+                // Scroll to bottom of chat
+                chatContainer.scrollTop = chatContainer.scrollHeight;
             } catch (error) {
                 console.error('Error:', error);
                 alert('An error occurred while generating the response.');
@@ -262,9 +282,20 @@
             }
         }
 
+        function addMessageToChat(role, content) {
+            const chatContainer = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+            messageDiv.textContent = content;
+            chatContainer.appendChild(messageDiv);
+
+            // Update conversation history
+            conversationHistory.push({ role, content });
+        }
+
         function clearChat() {
             conversationHistory = [];
-            document.getElementById('output').innerHTML = '';
+            document.getElementById('chatContainer').innerHTML = '';
             fetch('/clear-context', { method: 'POST' })
                 .then(response => {
                     if (!response.ok) {
@@ -276,6 +307,14 @@
 
         document.getElementById('sendMessage').addEventListener('click', sendMessage);
         document.getElementById('clearChat').addEventListener('click', clearChat);
+
+        // Allow sending message with Enter key, Shift+Enter for new line
+        document.getElementById('userInput').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
 
         // Stop the keep-alive mechanism when the window is closed or navigated away from
         window.addEventListener('beforeunload', stopKeepAlive);
