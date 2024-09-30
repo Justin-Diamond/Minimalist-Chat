@@ -9,66 +9,65 @@
     <style>
         :root {
             --primary-blue: rgb(70, 122, 207);
+            --background-color: #f9f9f9;
+            --input-bg-color: #fff;
+            --border-color: #ddd;
+            --primary-text-color: #333;
+            --button-bg-color: rgb(70, 122, 207);
+            --button-hover-color: rgb(56, 97, 165);
         }
 
         body {
             font-family: 'Roboto', sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
+            background-color: var(--background-color);
+            color: var(--primary-text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
             padding: 20px;
-            background-color: #f5f5f5;
-            color: #333;
-            line-height: 1.6;
-        }
-
-        .container {
-            background-color: #fff;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        h1 {
-            color: var(--primary-blue);
-            text-align: center;
-            font-size: 2.2em;
-            margin-bottom: 30px;
-        }
-
-        .login-container,
-        .main-container {
-            display: none;
-        }
-
-        .login-container.active,
-        .main-container.active {
-            display: block;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 700;
-            color: #34495e;
-        }
-
-        .input-wrapper {
-            padding: 0 15px;
-        }
-
-        input[type="password"],
-        textarea {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #bdc3c7;
-            border-radius: 6px;
-            font-size: 14px;
-            margin-bottom: 20px;
-            transition: border-color 0.3s ease;
+            min-height: 100vh;
             box-sizing: border-box;
         }
 
-        input[type="password"]:focus,
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background-color: var(--input-bg-color);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-top: 40px;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            text-align: center;
+            margin-bottom: 30px;
+            color: var(--primary-blue);
+        }
+
+        .input-container {
+            margin-bottom: 20px;
+        }
+
+        .input-container label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 15px;
+            font-size: 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--input-bg-color);
+            resize: none;
+            transition: border-color 0.3s ease;
+        }
+
         textarea:focus {
             outline: none;
             border-color: var(--primary-blue);
@@ -76,74 +75,37 @@
 
         .button-container {
             display: flex;
-            justify-content: center;
+            justify-content: space-between;
             margin-top: 20px;
-            padding: 0 15px;
         }
 
         button {
-            padding: 12px 24px;
-            background-color: var(--primary-blue);
+            background-color: var(--button-bg-color);
             color: white;
+            padding: 10px 20px;
             border: none;
             border-radius: 6px;
             font-size: 16px;
-            font-weight: 700;
             cursor: pointer;
-            transition: background-color 0.3s, transform 0.1s;
+            transition: background-color 0.3s;
         }
 
         button:hover {
-            background-color: rgb(56, 97, 165);
-            transform: translateY(-2px);
+            background-color: var(--button-hover-color);
         }
 
-        button:active {
-            transform: translateY(0);
-        }
-
-        #clearChat {
-            background-color: #e74c3c;
-        }
-
-        #clearChat:hover {
-            background-color: #c0392b;
-        }
-
-        #chatContainer {
-            height: 400px;
-            overflow-y: auto;
-            border: 1px solid #bdc3c7;
-            border-radius: 6px;
-            padding: 15px;
-            margin: 0 15px 20px;
-            background-color: #ecf0f1;
-        }
-
-        .message {
-            max-width: 70%;
-            margin-bottom: 15px;
-            padding: 12px;
-            border-radius: 18px;
-            line-height: 1.4;
-        }
-
-        .user-message {
-            background-color: var(--primary-blue);
-            color: white;
-            align-self: flex-end;
-            margin-left: auto;
-        }
-
-        .ai-message {
-            background-color: #fff;
-            color: #333;
-            border: 1px solid #bdc3c7;
+        #outputContainer {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #fafafa;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
         }
 
         .loading {
+            display: none;
+            margin-top: 10px;
             text-align: center;
-            margin-top: 20px;
         }
 
         .loading::after {
@@ -161,116 +123,56 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        #aiResponse {
+            font-size: 16px;
+            color: var(--primary-text-color);
+        }
+
+        #clearChat {
+            background-color: #e74c3c;
+        }
+
+        #clearChat:hover {
+            background-color: #c0392b;
+        }
     </style>
 </head>
 
 <body>
     <div class="container">
-        <div class="login-container active">
-            <h1>Simple Prompt Wrapper</h1>
-            <div class="input-wrapper">
-                <label for="password">Enter Password:</label>
-                <input type="password" id="password" name="password">
-            </div>
-            <div class="button-container">
-                <button id="login">Login</button>
-            </div>
+        <h1>AI Prompt Interface</h1>
+
+        <div class="input-container">
+            <label for="userInput">Enter your prompt:</label>
+            <textarea id="userInput" rows="4" placeholder="Type your message..."></textarea>
         </div>
 
-        <div class="main-container">
-            <h1>Simple Prompt Wrapper</h1>
-            <div id="chatContainer"></div>
-            <div class="input-wrapper">
-                <textarea id="userInput" rows="3" placeholder="Enter your prompt here..."></textarea>
-            </div>
-            <div class="button-container">
-                <button id="clearChat">Clear Output</button>
-                <button id="sendMessage">Submit Prompt</button>
-            </div>
-            <div id="loading" class="loading" style="display: none;"></div>
+        <div class="button-container">
+            <button id="clearChat">Clear Output</button>
+            <button id="sendMessage">Submit Prompt</button>
         </div>
+
+        <div id="outputContainer" style="display:none;">
+            <h2>Response:</h2>
+            <div id="aiResponse"></div>
+        </div>
+
+        <div id="loading" class="loading"></div>
     </div>
 
     <script>
-        let lastAiMessage = '';
-        let keepAliveInterval;
-
-        function handleSessionExpiration() {
-            console.log('Session expired');
-            alert('Your session has expired. Please log in again.');
-            document.querySelector('.main-container').classList.remove('active');
-            document.querySelector('.login-container').classList.add('active');
-            stopKeepAlive();
-        }
-
-        function startKeepAlive() {
-            keepAliveInterval = setInterval(sendKeepAlive, 5 * 60 * 1000); // every 5 minutes
-        }
-
-        function stopKeepAlive() {
-            clearInterval(keepAliveInterval);
-        }
-
-        function sendKeepAlive() {
-            console.log('Sending keep-alive request');
-            fetch('/keep-alive', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(response => {
-                console.log('Keep-alive response status:', response.status);
-                if (!response.ok) {
-                    throw new Error('Keep-alive failed');
-                }
-            })
-            .catch(error => {
-                console.error('Keep-alive error:', error);
-                handleSessionExpiration();
-            });
-        }
-
-        document.getElementById('login').addEventListener('click', function () {
-            const enteredPassword = document.getElementById('password').value;
-
-            fetch('/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ password: enteredPassword })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    console.log('Login successful');
-                    document.querySelector('.login-container').classList.remove('active');
-                    document.querySelector('.main-container').classList.add('active');
-                    startKeepAlive();
-                } else {
-                    console.log('Login failed');
-                    alert('Incorrect password!');
-                }
-            })
-            .catch(error => console.error('Error:', error));
-        });
-        
         async function sendMessage() {
             const userInput = document.getElementById('userInput').value;
-            const chatContainer = document.getElementById('chatContainer');
+            const outputContainer = document.getElementById('outputContainer');
+            const aiResponseElement = document.getElementById('aiResponse');
+            const loadingIndicator = document.getElementById('loading');
 
-            // Display user input as a message
-            const userMessageDiv = document.createElement('div');
-            userMessageDiv.className = 'message user-message';
-            userMessageDiv.textContent = `User: ${userInput}`;
-            chatContainer.appendChild(userMessageDiv);
-
-            // Clear user input
-            document.getElementById('userInput').value = '';
+            // Clear previous AI response
+            aiResponseElement.textContent = '';
 
             // Show loading indicator
-            document.getElementById('loading').style.display = 'block';
+            loadingIndicator.style.display = 'block';
 
             try {
                 const response = await fetch('/generate-response', {
@@ -280,67 +182,37 @@
                 });
 
                 if (response.status === 401) {
-                    handleSessionExpiration();
+                    alert('Session expired. Please log in again.');
                     return;
                 }
 
                 const data = await response.json();
                 
                 // Hide loading indicator
-                document.getElementById('loading').style.display = 'none';
+                loadingIndicator.style.display = 'none';
 
-                // Display AI message
-                const aiMessageDiv = document.createElement('div');
-                aiMessageDiv.className = 'message ai-message';
-                aiMessageDiv.textContent = `AI: ${data.response}`;
-                chatContainer.appendChild(aiMessageDiv);
+                // Display AI response
+                aiResponseElement.textContent = data.response;
+                outputContainer.style.display = 'block';
 
-                // Store last AI message
-                lastAiMessage = data.response;
-
-                // Scroll to bottom of chat container
-                chatContainer.scrollTop = chatContainer.scrollHeight;
             } catch (error) {
                 console.error('Error:', error);
                 alert('An error occurred while generating the response.');
-                document.getElementById('loading').style.display = 'none';
+                loadingIndicator.style.display = 'none';
             }
         }
 
-        function clearChat() {
-            const chatContainer = document.getElementById('chatContainer');
-            chatContainer.innerHTML = '';
-            lastAiMessage = '';
+        function clearOutput() {
+            const outputContainer = document.getElementById('outputContainer');
+            const aiResponseElement = document.getElementById('aiResponse');
 
-            // Send request to clear context on the server
-            fetch('/clear-context', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(response => {
-                if (response.status === 401) {
-                    handleSessionExpiration();
-                    return;
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data && data.success) {
-                    console.log('Context cleared successfully');
-                } else {
-                    console.error('Failed to clear context');
-                }
-            })
-            .catch(error => console.error('Error:', error));
+            // Clear the output area
+            aiResponseElement.textContent = '';
+            outputContainer.style.display = 'none';
         }
 
         document.getElementById('sendMessage').addEventListener('click', sendMessage);
-        document.getElementById('clearChat').addEventListener('click', clearChat);
-
-        // Stop the keep-alive mechanism when the window is closed or navigated away from
-        window.addEventListener('beforeunload', stopKeepAlive);
+        document.getElementById('clearChat').addEventListener('click', clearOutput);
     </script>
 </body>
 
