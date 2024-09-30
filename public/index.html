@@ -58,12 +58,21 @@
 
         input[type="password"],
         textarea {
-            width: 100%;
+            width: calc(100% - 1.5rem);
             padding: 0.75rem;
             border: 1px solid var(--border-color);
             border-radius: 0.25rem;
             font-size: 1rem;
             margin-bottom: 1rem;
+            margin-left: auto;
+            margin-right: auto;
+            display: block;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 1rem;
         }
 
         button {
@@ -79,6 +88,14 @@
 
         button:hover {
             background-color: #0e8c6d;
+        }
+
+        #clearChat {
+            background-color: #e74c3c;
+        }
+
+        #clearChat:hover {
+            background-color: #c0392b;
         }
 
         #output {
@@ -125,7 +142,10 @@
             <h1>Legislative Process Paper Drafter</h1>
             <label for="userInput">Enter your prompt:</label>
             <textarea id="userInput" rows="4" placeholder="Type your prompt here..."></textarea>
-            <button id="sendMessage">Generate Draft</button>
+            <div class="button-container">
+                <button id="clearChat">Clear Chat</button>
+                <button id="sendMessage">Generate Draft</button>
+            </div>
             <div id="loading" class="loading" style="display: none;"></div>
             <div id="output"></div>
         </div>
@@ -133,6 +153,7 @@
 
     <script>
         let keepAliveInterval;
+        let conversationHistory = [];
 
         function handleSessionExpiration() {
             console.log('Session expired');
@@ -200,9 +221,6 @@
             const outputDiv = document.getElementById('output');
             const loadingDiv = document.getElementById('loading');
 
-            // Clear previous output
-            outputDiv.textContent = '';
-
             // Show loading indicator
             loadingDiv.style.display = 'block';
 
@@ -210,7 +228,7 @@
                 const response = await fetch('/generate-response', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: userInput })
+                    body: JSON.stringify({ prompt: userInput, history: conversationHistory })
                 });
 
                 if (response.status === 401) {
@@ -223,8 +241,20 @@
                 // Hide loading indicator
                 loadingDiv.style.display = 'none';
 
-                // Display AI message
-                outputDiv.textContent = data.response;
+                // Update conversation history
+                conversationHistory.push({ role: 'user', content: userInput });
+                conversationHistory.push({ role: 'assistant', content: data.response });
+
+                // Display full conversation
+                outputDiv.innerHTML = conversationHistory.map(msg => 
+                    `<p><strong>${msg.role === 'user' ? 'You' : 'Assistant'}:</strong> ${msg.content}</p>`
+                ).join('');
+
+                // Clear input field
+                document.getElementById('userInput').value = '';
+
+                // Scroll to bottom of output
+                outputDiv.scrollTop = outputDiv.scrollHeight;
             } catch (error) {
                 console.error('Error:', error);
                 alert('An error occurred while generating the response.');
@@ -232,7 +262,20 @@
             }
         }
 
+        function clearChat() {
+            conversationHistory = [];
+            document.getElementById('output').innerHTML = '';
+            fetch('/clear-context', { method: 'POST' })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to clear context on server');
+                    }
+                })
+                .catch(error => console.error('Error clearing context:', error));
+        }
+
         document.getElementById('sendMessage').addEventListener('click', sendMessage);
+        document.getElementById('clearChat').addEventListener('click', clearChat);
 
         // Stop the keep-alive mechanism when the window is closed or navigated away from
         window.addEventListener('beforeunload', stopKeepAlive);
