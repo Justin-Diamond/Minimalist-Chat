@@ -77,16 +77,14 @@ app.post('/generate-response', async (req, res) => {
 
     try {
         // Step 1: Create a thread
-        const createThreadResponse = await fetch('https://api.openai.com/v2/threads', {
+        const createThreadResponse = await fetch('https://api.openai.com/v1/threads', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json',
                 'OpenAI-Beta': 'assistants=v1'
             },
-            body: JSON.stringify({
-                messages: [{ role: "user", content: prompt }]
-            })
+            body: JSON.stringify({})
         });
 
         if (!createThreadResponse.ok) {
@@ -98,8 +96,30 @@ app.post('/generate-response', async (req, res) => {
         const thread = await createThreadResponse.json();
         console.log('Thread created:', thread.id);
 
-        // Step 2: Run the assistant
-        const runResponse = await fetch(`https://api.openai.com/v2/threads/${thread.id}/runs`, {
+        // Step 2: Add a message to the thread
+        const addMessageResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/messages`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+                'OpenAI-Beta': 'assistants=v1'
+            },
+            body: JSON.stringify({
+                role: "user",
+                content: prompt
+            })
+        });
+
+        if (!addMessageResponse.ok) {
+            const errorData = await addMessageResponse.json();
+            console.error('Add message error:', errorData);
+            return res.status(addMessageResponse.status).json({ error: 'Failed to add message', details: errorData });
+        }
+
+        console.log('Message added to thread');
+
+        // Step 3: Run the assistant
+        const runResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/runs`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
@@ -108,7 +128,7 @@ app.post('/generate-response', async (req, res) => {
             },
             body: JSON.stringify({
                 assistant_id: assistantId,
-                model: "gpt-4-0125-preview"
+                model: "gpt-4-turbo-preview"
             })
         });
 
@@ -121,7 +141,7 @@ app.post('/generate-response', async (req, res) => {
         const run = await runResponse.json();
         console.log('Run created:', run.id);
 
-        // Step 3: Polling for completion
+        // Step 4: Polling for completion
         let runStatus = await checkRunStatus(thread.id, run.id, apiKey);
         while (runStatus.status !== 'completed') {
             await new Promise(resolve => setTimeout(resolve, 1000));
@@ -130,8 +150,8 @@ app.post('/generate-response', async (req, res) => {
 
         console.log('Run completed');
 
-        // Step 4: Retrieve the messages
-        const messagesResponse = await fetch(`https://api.openai.com/v2/threads/${thread.id}/messages`, {
+        // Step 5: Retrieve the messages
+        const messagesResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/messages`, {
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
                 'OpenAI-Beta': 'assistants=v1'
@@ -176,7 +196,7 @@ app.post('/keep-alive', (req, res) => {
 
 // Helper function to check the run status
 async function checkRunStatus(threadId, runId, apiKey) {
-    const response = await fetch(`https://api.openai.com/v2/threads/${threadId}/runs/${runId}`, {
+    const response = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${runId}`, {
         headers: {
             'Authorization': `Bearer ${apiKey}`,
             'OpenAI-Beta': 'assistants=v1'
