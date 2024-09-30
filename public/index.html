@@ -4,117 +4,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Prompt Wrapper</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <title>Legislative Process Paper Drafter</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-blue: rgb(70, 122, 207);
-            --background-color: #f9f9f9;
-            --input-bg-color: #fff;
-            --border-color: #ddd;
-            --primary-text-color: #333;
-            --button-bg-color: rgb(70, 122, 207);
-            --button-hover-color: rgb(56, 97, 165);
+            --primary-color: #10a37f;
+            --background-color: #f7f7f8;
+            --text-color: #353740;
+            --border-color: #e5e5e5;
         }
 
         body {
-            font-family: 'Roboto', sans-serif;
+            font-family: 'Inter', sans-serif;
             background-color: var(--background-color);
-            color: var(--primary-text-color);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            color: var(--text-color);
+            line-height: 1.6;
             margin: 0;
-            padding: 20px;
-            min-height: 100vh;
-            box-sizing: border-box;
+            padding: 0;
         }
 
         .container {
-            width: 100%;
             max-width: 800px;
-            background-color: var(--input-bg-color);
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            margin-top: 40px;
+            margin: 0 auto;
+            padding: 2rem;
         }
 
         h1 {
-            font-size: 1.8rem;
+            color: var(--primary-color);
             text-align: center;
-            margin-bottom: 30px;
-            color: var(--primary-blue);
+            font-size: 2rem;
+            margin-bottom: 2rem;
         }
 
-        .input-container {
-            margin-bottom: 20px;
+        .login-container,
+        .main-container {
+            display: none;
+            background-color: white;
+            border-radius: 0.5rem;
+            padding: 2rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
 
-        .input-container label {
+        .login-container.active,
+        .main-container.active {
             display: block;
-            margin-bottom: 8px;
-            font-weight: 700;
         }
 
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        input[type="password"],
         textarea {
             width: 100%;
-            padding: 15px;
-            font-size: 16px;
+            padding: 0.75rem;
             border: 1px solid var(--border-color);
-            border-radius: 8px;
-            background-color: var(--input-bg-color);
-            resize: none;
-            transition: border-color 0.3s ease;
-        }
-
-        textarea:focus {
-            outline: none;
-            border-color: var(--primary-blue);
-        }
-
-        .button-container {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 20px;
+            border-radius: 0.25rem;
+            font-size: 1rem;
+            margin-bottom: 1rem;
         }
 
         button {
-            background-color: var(--button-bg-color);
+            background-color: var(--primary-color);
             color: white;
-            padding: 10px 20px;
             border: none;
-            border-radius: 6px;
-            font-size: 16px;
+            border-radius: 0.25rem;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
             cursor: pointer;
             transition: background-color 0.3s;
         }
 
         button:hover {
-            background-color: var(--button-hover-color);
+            background-color: #0e8c6d;
         }
 
-        #outputContainer {
-            margin-top: 30px;
-            padding: 20px;
-            background-color: #fafafa;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
+        #output {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background-color: var(--background-color);
+            border-radius: 0.25rem;
+            white-space: pre-wrap;
         }
 
         .loading {
-            display: none;
-            margin-top: 10px;
             text-align: center;
+            margin-top: 1rem;
         }
 
         .loading::after {
             content: '';
             display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #bdc3c7;
-            border-top: 3px solid var(--primary-blue);
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid var(--border-color);
+            border-top: 2px solid var(--primary-color);
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -123,56 +109,102 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-
-        #aiResponse {
-            font-size: 16px;
-            color: var(--primary-text-color);
-        }
-
-        #clearChat {
-            background-color: #e74c3c;
-        }
-
-        #clearChat:hover {
-            background-color: #c0392b;
-        }
     </style>
 </head>
 
 <body>
     <div class="container">
-        <h1>AI Prompt Interface</h1>
+        <div class="login-container active">
+            <h1>Legislative Process Paper Drafter</h1>
+            <label for="password">Enter Password:</label>
+            <input type="password" id="password" name="password">
+            <button id="login">Login</button>
+        </div>
 
-        <div class="input-container">
+        <div class="main-container">
+            <h1>Legislative Process Paper Drafter</h1>
             <label for="userInput">Enter your prompt:</label>
-            <textarea id="userInput" rows="4" placeholder="Type your message..."></textarea>
+            <textarea id="userInput" rows="4" placeholder="Type your prompt here..."></textarea>
+            <button id="sendMessage">Generate Draft</button>
+            <div id="loading" class="loading" style="display: none;"></div>
+            <div id="output"></div>
         </div>
-
-        <div class="button-container">
-            <button id="clearChat">Clear Output</button>
-            <button id="sendMessage">Submit Prompt</button>
-        </div>
-
-        <div id="outputContainer" style="display:none;">
-            <h2>Response:</h2>
-            <div id="aiResponse"></div>
-        </div>
-
-        <div id="loading" class="loading"></div>
     </div>
 
     <script>
+        let keepAliveInterval;
+
+        function handleSessionExpiration() {
+            console.log('Session expired');
+            alert('Your session has expired. Please log in again.');
+            document.querySelector('.main-container').classList.remove('active');
+            document.querySelector('.login-container').classList.add('active');
+            stopKeepAlive();
+        }
+
+        function startKeepAlive() {
+            keepAliveInterval = setInterval(sendKeepAlive, 5 * 60 * 1000); // every 5 minutes
+        }
+
+        function stopKeepAlive() {
+            clearInterval(keepAliveInterval);
+        }
+
+        function sendKeepAlive() {
+            console.log('Sending keep-alive request');
+            fetch('/keep-alive', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                console.log('Keep-alive response status:', response.status);
+                if (!response.ok) {
+                    throw new Error('Keep-alive failed');
+                }
+            })
+            .catch(error => {
+                console.error('Keep-alive error:', error);
+                handleSessionExpiration();
+            });
+        }
+
+        document.getElementById('login').addEventListener('click', function () {
+            const enteredPassword = document.getElementById('password').value;
+
+            fetch('/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ password: enteredPassword })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Login successful');
+                    document.querySelector('.login-container').classList.remove('active');
+                    document.querySelector('.main-container').classList.add('active');
+                    startKeepAlive();
+                } else {
+                    console.log('Login failed');
+                    alert('Incorrect password!');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+        
         async function sendMessage() {
             const userInput = document.getElementById('userInput').value;
-            const outputContainer = document.getElementById('outputContainer');
-            const aiResponseElement = document.getElementById('aiResponse');
-            const loadingIndicator = document.getElementById('loading');
+            const outputDiv = document.getElementById('output');
+            const loadingDiv = document.getElementById('loading');
 
-            // Clear previous AI response
-            aiResponseElement.textContent = '';
+            // Clear previous output
+            outputDiv.textContent = '';
 
             // Show loading indicator
-            loadingIndicator.style.display = 'block';
+            loadingDiv.style.display = 'block';
 
             try {
                 const response = await fetch('/generate-response', {
@@ -182,37 +214,28 @@
                 });
 
                 if (response.status === 401) {
-                    alert('Session expired. Please log in again.');
+                    handleSessionExpiration();
                     return;
                 }
 
                 const data = await response.json();
                 
                 // Hide loading indicator
-                loadingIndicator.style.display = 'none';
+                loadingDiv.style.display = 'none';
 
-                // Display AI response
-                aiResponseElement.textContent = data.response;
-                outputContainer.style.display = 'block';
-
+                // Display AI message
+                outputDiv.textContent = data.response;
             } catch (error) {
                 console.error('Error:', error);
                 alert('An error occurred while generating the response.');
-                loadingIndicator.style.display = 'none';
+                loadingDiv.style.display = 'none';
             }
         }
 
-        function clearOutput() {
-            const outputContainer = document.getElementById('outputContainer');
-            const aiResponseElement = document.getElementById('aiResponse');
-
-            // Clear the output area
-            aiResponseElement.textContent = '';
-            outputContainer.style.display = 'none';
-        }
-
         document.getElementById('sendMessage').addEventListener('click', sendMessage);
-        document.getElementById('clearChat').addEventListener('click', clearOutput);
+
+        // Stop the keep-alive mechanism when the window is closed or navigated away from
+        window.addEventListener('beforeunload', stopKeepAlive);
     </script>
 </body>
 
