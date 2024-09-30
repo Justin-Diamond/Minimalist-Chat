@@ -66,7 +66,7 @@ app.post('/generate-response', async (req, res) => {
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const { prompt } = req.body;
+    const { prompt, history } = req.body;
     const apiKey = process.env.OPENAI_API_KEY;
     const assistantId = process.env.OPENAI_ASSISTANT_ID;
 
@@ -96,8 +96,24 @@ app.post('/generate-response', async (req, res) => {
         const thread = await createThreadResponse.json();
         console.log('Thread created:', thread.id);
 
-        // Step 2: Add a message to the thread
-        const addMessageResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/messages`, {
+        // Step 2: Add messages to the thread
+        for (const message of history) {
+            await fetch(`https://api.openai.com/v1/threads/${thread.id}/messages`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json',
+                    'OpenAI-Beta': 'assistants=v1'
+                },
+                body: JSON.stringify({
+                    role: message.role,
+                    content: message.content
+                })
+            });
+        }
+
+        // Add the new user message
+        await fetch(`https://api.openai.com/v1/threads/${thread.id}/messages`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
@@ -110,13 +126,7 @@ app.post('/generate-response', async (req, res) => {
             })
         });
 
-        if (!addMessageResponse.ok) {
-            const errorData = await addMessageResponse.json();
-            console.error('Add message error:', errorData);
-            return res.status(addMessageResponse.status).json({ error: 'Failed to add message', details: errorData });
-        }
-
-        console.log('Message added to thread');
+        console.log('Messages added to thread');
 
         // Step 3: Run the assistant
         const runResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/runs`, {
@@ -177,6 +187,14 @@ app.post('/generate-response', async (req, res) => {
         console.error('Error:', error.stack || error);
         res.status(500).json({ error: 'Internal Server Error', details: error.message });
     }
+});
+
+app.post('/clear-context', (req, res) => {
+    if (!req.session.authenticated) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    // Clear any server-side context if needed
+    res.json({ success: true });
 });
 
 app.post('/keep-alive', (req, res) => {
